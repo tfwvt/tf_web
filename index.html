@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tFish Int • Multi Media</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700&family=JetBrains+Mono:wght@300&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --obsidian-deep: #020402;
+            --stellar-green: #0a2e1c;
+            --ethereal-green: #1a5c3d;
+            --neon-accent: #4ade80;
+            --grain-opacity: 0.04;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--obsidian-deep);
+            color: #e0e0e0;
+            font-family: 'Space Grotesk', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Stellar Grain Filter Overlay */
+        .grain-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            opacity: var(--grain-opacity);
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Starfield Background */
+        .starfield {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                radial-gradient(1px 1px at 25% 35%, #fff 50%, transparent 50%),
+                radial-gradient(1px 1px at 50% 10%, #fff 50%, transparent 50%),
+                radial-gradient(2px 2px at 15% 85%, #4ade80 50%, transparent 50%),
+                radial-gradient(1px 1px at 85% 45%, #fff 50%, transparent 50%),
+                radial-gradient(1px 1px at 70% 70%, #fff 50%, transparent 50%);
+            background-size: 400px 400px;
+            animation: drift 120s linear infinite;
+            opacity: 0.3;
+        }
+
+        @keyframes drift {
+            from { transform: translate(0, 0); }
+            to { transform: translate(-50px, -50px); }
+        }
+
+        /* UI Layout */
+        .main-stage {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.4em;
+        }
+
+        .header h1 {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--neon-accent);
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
+        }
+
+        /* The Fish Bowl */
+        .aquarium-wrapper {
+            position: relative;
+            width: 500px;
+            height: 500px;
+        }
+
+        .bowl {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 30%, var(--ethereal-green) 0%, var(--stellar-green) 40%, var(--obsidian-deep) 100%);
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                inset 0 0 80px rgba(0, 0, 0, 0.8),
+                0 0 40px rgba(10, 46, 28, 0.5),
+                inset 0 20px 40px rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(2px);
+        }
+
+        /* Glass Reflection */
+        .bowl::after {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 15%;
+            width: 30%;
+            height: 20%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+            border-radius: 50% 40% 60% 30%;
+            filter: blur(8px);
+        }
+
+        /* Aerator Bubbles */
+        .aerator {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 20px;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            bottom: 0;
+            animation: rise linear infinite;
+        }
+
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            20% { opacity: 0.6; }
+            100% { transform: translateY(-500px) scale(1.5); opacity: 0; }
+        }
+
+        /* Project Bubbles */
+        .project-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 4; /* behind the fish (5), above the aerator bubbles */
+            pointer-events: none;
+        }
+
+        .project-bubble {
+            position: absolute;
+            bottom: -110px;
+            width: var(--size, 88px);
+            height: var(--size, 88px);
+            margin-left: calc(var(--size, 88px) / -2);
+            pointer-events: auto;
+            animation: project-rise var(--dur, 16s) linear infinite;
+        }
+
+        .project-bubble-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.35) 0 6%, rgba(255, 255, 255, 0.06) 22%, rgba(74, 222, 128, 0.08) 60%, rgba(74, 222, 128, 0.2) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: inset 0 0 18px rgba(74, 222, 128, 0.25), 0 0 12px rgba(74, 222, 128, 0.15);
+            color: #e0e0e0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            line-height: 1.3;
+            text-align: center;
+            text-transform: uppercase;
+            cursor: pointer;
+            appearance: none;
+            animation: project-sway var(--sway, 3.5s) ease-in-out infinite alternate;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, color 0.25s ease, opacity 0.25s ease;
+        }
+
+        /* Hold still while hovered/focused so it's easy to click.
+           All bubbles pause together so their spacing doesn't drift. */
+        .project-layer:hover .project-bubble,
+        .project-layer:focus-within .project-bubble,
+        .project-bubble:hover .project-bubble-inner,
+        .project-bubble:focus-within .project-bubble-inner {
+            animation-play-state: paused;
+        }
+
+        .project-bubble:hover .project-bubble-inner,
+        .project-bubble:focus-within .project-bubble-inner {
+            transform: scale(1.15);
+            color: var(--neon-accent);
+            box-shadow: inset 0 0 24px rgba(74, 222, 128, 0.4), 0 0 24px rgba(74, 222, 128, 0.45);
+        }
+
+        /* An invisible popped bubble must not count as hovered (it would pause the tank) */
+        .project-bubble.popping {
+            pointer-events: none;
+        }
+
+        .project-bubble.popping .project-bubble-inner {
+            transform: scale(1.6);
+            opacity: 0;
+        }
+
+        @keyframes project-rise {
+            0% { transform: translateY(0); opacity: 0; }
+            8% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { transform: translateY(-640px); opacity: 0; }
+        }
+
+        @keyframes project-sway {
+            from { translate: -10px 0; }
+            to { translate: 10px 0; }
+        }
+
+        /* Fish shouldn't block clicks on bubbles. Swerving and darting are set from JS
+           through translate/rotate, which stack on top of the swim keyframes' transform. */
+        .fish { pointer-events: none; }
+
+        /* Project Detail: grows out of the clicked bubble to fill the bowl */
+        .project-detail {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 70px 70px 56px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 25%, #1f6b47 0%, var(--stellar-green) 45%, #041009 100%);
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(74, 222, 128, 0.25);
+            clip-path: circle(0 at 50% 50%);
+            transition: clip-path 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .project-detail[hidden] { display: none; }
+
+        /* The stats sit over the bottom of the bowl; get them out of the panel's way */
+        .stats-overlay { transition: opacity 0.3s ease; }
+
+        .main-stage:has(.project-detail.open) .stats-overlay {
+            opacity: 0;
+        }
+
+        .project-detail-close {
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            translate: -50% 0;
+            display: grid;
+            place-items: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.06);
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: transform 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .project-detail-close:hover,
+        .project-detail-close:focus-visible {
+            transform: rotate(90deg);
+            color: var(--neon-accent);
+            border-color: var(--neon-accent);
+            box-shadow: 0 0 16px rgba(74, 222, 128, 0.4);
+            outline: none;
+        }
+
+        .project-detail-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            max-width: 320px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .project-detail.open .project-detail-body {
+            opacity: 1;
+            transform: none;
+            transition-delay: 0.25s;
+        }
+
+        .project-detail-kicker {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            letter-spacing: 0.4em;
+            color: var(--neon-accent);
+            opacity: 0.8;
+        }
+
+        .project-detail-title {
+            font-size: 1.9rem;
+            font-weight: 700;
+            line-height: 1.05;
+            letter-spacing: -0.01em;
+            background: linear-gradient(120deg, #fff 0%, #bbf7d0 45%, var(--neon-accent) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 0 12px rgba(74, 222, 128, 0.35));
+        }
+
+        .project-detail-desc {
+            font-size: 0.78rem;
+            font-weight: 300;
+            line-height: 1.55;
+            color: rgba(224, 224, 224, 0.75);
+        }
+
+        .project-detail-frame {
+            width: 260px;
+            margin-top: 4px;
+            padding: 6px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(74, 222, 128, 0.08);
+        }
+
+        .project-detail-frame img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 13 / 7;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .project-detail,
+            .project-detail-body { transition: none; }
+        }
+
+        /* Cartoon Triggerfish */
+        .fish {
+            position: absolute;
+            width: 80px;
+            height: 50px;
+            z-index: 5;
+            transition: transform 0.3s ease;
+        }
+
+        .fish-body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #eab308; /* Cartoon yellow triggerfish base */
+            clip-path: polygon(0% 50%, 20% 0%, 80% 10%, 100% 50%, 80% 90%, 20% 100%);
+            box-shadow: inset -10px 0 20px rgba(0,0,0,0.3);
+        }
+
+        .fish-body::after {
+            content: '';
+            position: absolute;
+            top: 20%;
+            right: 15%;
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .fish-stripe {
+            position: absolute;
+            top: 0;
+            left: 30%;
+            width: 15px;
+            height: 100%;
+            background: #000;
+            opacity: 0.2;
+            transform: skewX(-20deg);
+        }
+
+        .fin {
+            position: absolute;
+            background: #ca8a04;
+            width: 20px;
+            height: 25px;
+            left: 10px;
+            top: -10px;
+            clip-path: polygon(0 100%, 100% 0, 100% 100%);
+        }
+
+        .tail {
+            position: absolute;
+            right: -15px;
+            top: 12px;
+            width: 25px;
+            height: 25px;
+            background: #ca8a04;
+            clip-path: polygon(100% 0, 0 50%, 100% 100%);
+        }
+
+        /* Animations for specific fish */
+        .fish-1 { top: 30%; left: -100px; animation: swim1 18s linear infinite; }
+        .fish-2 { top: 60%; left: -100px; animation: swim2 24s linear infinite 2s; transform: scale(0.7); }
+        .fish-3 { top: 45%; right: -120px; animation: swim3 21s linear infinite 5s; transform: scale(1.2) scaleX(-1); }
+
+        @keyframes swim1 {
+            0% { left: -100px; transform: translateY(0); }
+            /* 25% { transform: translateY(-20px) rotate(5deg); } */
+            50% { left: 550px; transform: translateY(10px); }
+            51% { transform: scaleX(-1); }
+            /* 75% { transform: translateY(-10px) rotate(-5deg); } */
+            100% { left: -100px; transform: translateY(0) scaleX(-1); }
+        }
+
+        @keyframes swim2 {
+            0% { left: -100px; }
+            100% { left: 550px; }
+        }
+
+        @keyframes swim3 {
+            0% { right: -100px; transform: scaleX(-1) translateY(0); }
+            50% { right: 550px; transform: scaleX(-1) translateY(30px); }
+            100% { right: -100px; transform: scaleX(-1) translateY(0); }
+        }
+
+        /* Data Overlay */
+        .stats-overlay {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 3rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--neon-accent);
+            opacity: 0.6;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #fff;
+        }
+
+        .etching-label {
+            position: absolute;
+            top: 50%;
+            right: -120px;
+            transform: rotate(90deg);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            opacity: 0.3;
+            letter-spacing: 0.8em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grain-overlay"></div>
+    <div class="starfield"></div>
+
+    <main class="main-stage">
+        <header class="header">
+            <h1>tFish Int • Multi Media</h1>
+        </header>
+
+        <div class="aquarium-wrapper">
+            <div class="bowl">
+                <!-- Aerator Bubbles Spawner -->
+                <div class="aerator" id="bubble-container"></div>
+
+                <!-- Project Bubbles + detail panel -->
+                <div class="project-layer" id="project-layer"></div>
+
+                <div class="project-detail" id="project-detail" role="dialog" aria-labelledby="project-detail-title" hidden>
+                    <button class="project-detail-close" type="button" aria-label="Close">
+                        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                            <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <div class="project-detail-body">
+                        <span class="project-detail-kicker"></span>
+                        <h2 class="project-detail-title" id="project-detail-title"></h2>
+                        <p class="project-detail-desc"></p>
+                        <div class="project-detail-frame"><img alt=""></div>
+                    </div>
+                </div>
+                
+                <!-- Fish 1 -->
+                <div class="fish fish-1">
+                    <div class="fin"></div>
+                    <div class="fish-body">
+                        <div class="fish-stripe"></div>
+                    </div>
+                    <div class="tail"></div>
+                </div>
+
+                <!-- Fish 2 -->
+                <div class="fish fish-2">
+                    <div class="fin" style="background: #ef4444;"></div>
+                    <div class="fish-body" style="background: #f87171;">
+                        <div class="fish-stripe"></div>
+                    </div>
+                    <div class="tail" style="background: #ef4444;"></div>
+                </div>
+
+                <!-- Fish 3 -->
+                <div class="fish fish-3">
+                    <div class="fin" style="background: #3b82f6;"></div>
+                    <div class="fish-body" style="background: #60a5fa;">
+                        <div class="fish-stripe"></div>
+                    </div>
+                    <div class="tail" style="background: #3b82f6;"></div>
+                </div>
+            </div>
+            <div class="etching-label">media solve web</div>
+        </div>
+
+        <div class="stats-overlay">
+            <div class="stat-item">
+                <span class="stat-label">OXYGEN</span>
+                <span class="stat-value">98.2%</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">DEPTH</span>
+                <span class="stat-value">2ft</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">TEMP</span>
+                <span class="stat-value">72°F</span>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const bubbleContainer = document.getElementById('bubble-container');
+        const bubbleCount = 20;
+
+        for (let i = 0; i < bubbleCount; i++) {
+            createBubble();
+        }
+
+        function createBubble() {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            
+            const size = Math.random() * 8 + 4;
+            const left = Math.random() * 100;
+            const duration = Math.random() * 3 + 2;
+            const delay = Math.random() * 5;
+
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.left = `${left}%`;
+            bubble.style.animationDuration = `${duration}s`;
+            bubble.style.animationDelay = `${delay}s`;
+
+            bubbleContainer.appendChild(bubble);
+
+            // Recycle bubble
+            bubble.addEventListener('animationiteration', () => {
+                bubble.style.left = `${Math.random() * 100}%`;
+            });
+        }
+
+        // Edit this list: one bubble per project. Swap `image` for a real path like 'img/project-one.jpg'
+        const placeholderText = 'A short description of this project: what it is, who it was for and what you made. Replace this with a sentence or two about the work.';
+        const projects = [
+            { title: 'Project One', description: placeholderText, image: placeholderImage('Project One', 150) },
+            { title: 'Project Two', description: placeholderText, image: placeholderImage('Project Two', 190) },
+            { title: 'Project Three', description: placeholderText, image: placeholderImage('Project Three', 45) },
+            { title: 'Project Four', description: placeholderText, image: placeholderImage('Project Four', 280) },
+        ];
+
+        // Simple generated landscape so each project has an image until real ones are added
+        function placeholderImage(label, hue) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="280" viewBox="0 0 520 280">
+                <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="hsl(${hue},45%,30%)"/><stop offset="1" stop-color="hsl(${hue},55%,10%)"/>
+                </linearGradient></defs>
+                <rect width="520" height="280" fill="url(#g)"/>
+                <circle cx="390" cy="85" r="34" fill="hsl(${hue},70%,75%)" opacity="0.8"/>
+                <path d="M0 280L140 140L230 220L320 120L520 280Z" fill="hsl(${hue},40%,18%)"/>
+                <text x="24" y="44" fill="rgba(255,255,255,0.7)" font-family="monospace" font-size="16" letter-spacing="4">${label.toUpperCase()}</text>
+            </svg>`;
+            return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+        }
+
+        const projectLayer = document.getElementById('project-layer');
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const riseDuration = 16;
+        const startleRadius = 260;
+
+        // Per-fish steering state: a swerve around bubbles plus an optional startle dart
+        const fishState = new Map();
+        document.querySelectorAll('.fish').forEach((fish) => {
+            fishState.set(fish, { avoidY: 0, tilt: 0, dir: 1, lastX: null, dart: null });
+        });
+        const steerSpeed = 90;  // px/s a fish can swerve: slow enough that some still bump into bubbles
+        const relaxSpeed = 35;  // px/s it drifts back to its normal path
+        const maxSwerve = 100;
+        const riseSpeed = 640 / riseDuration; // px/s, matches the project-rise keyframes
+
+        // The swim keyframes scale some fish; read it so hit boxes and clearances match what's drawn
+        function fishScale(fish) {
+            const m = new DOMMatrixReadOnly(getComputedStyle(fish).transform);
+            return Math.hypot(m.a, m.b) || 1;
+        }
+
+        // Unrotated box around the fish, so tilting doesn't inflate it the way getBoundingClientRect would
+        function fishHitBox(fish) {
+            const r = fish.getBoundingClientRect();
+            const s = fishScale(fish);
+            const cx = r.left + r.width / 2;
+            const cy = r.top + r.height / 2;
+            const w = fish.offsetWidth * s / 2;
+            const h = fish.offsetHeight * s / 2;
+            return { left: cx - w, right: cx + w, top: cy - h, bottom: cy + h, width: w * 2, height: h * 2 };
+        }
+        const noOffset = { x: 0, y: 0, rot: 0 };
+
+        const smoothstep = (k) => k * k * (3 - 2 * k);
+        const mix = (a, b, k) => ({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, rot: a.rot + (b.rot - a.rot) * k });
+
+        // Dart out over 0.35s, hold, then drift back over 1.8s
+        function dartOffset(state, now) {
+            const d = state.dart;
+            if (!d) return noOffset;
+            const t = (now - d.start) / 1000;
+            if (t < 0.35) return mix(d.from, d.to, smoothstep(t / 0.35));
+            if (t < 0.7) return d.to;
+            if (t < 2.5) return mix(d.to, noOffset, smoothstep((t - 0.7) / 1.8));
+            state.dart = null;
+            return noOffset;
+        }
+
+        // Fish near a popped bubble dart away from it, then drift back to their swim path
+        function startleFish(bubble) {
+            if (reduceMotion) return;
+            const now = performance.now();
+            const pop = bubble.getBoundingClientRect();
+            const popX = pop.left + pop.width / 2;
+            const popY = pop.top + pop.height / 2;
+            const others = [...document.querySelectorAll('.project-bubble:not(.popping)')]
+                .filter((b) => b !== bubble)
+                .map((b) => {
+                    const o = b.getBoundingClientRect();
+                    return { cx: o.left + o.width / 2, cy: o.top + o.height / 2, radius: o.width / 2 };
+                });
+
+            fishState.forEach((state, fish) => {
+                const r = fish.getBoundingClientRect();
+                const dx = r.left + r.width / 2 - popX;
+                const dy = r.top + r.height / 2 - popY;
+                const dist = Math.hypot(dx, dy) || 1;
+                if (dist > startleRadius) return;
+
+                let push = 30 + (1 - dist / startleRadius) * 70; // closer = bigger dart
+                // Cut the dart short rather than flee straight into another bubble
+                const fishX = r.left + r.width / 2;
+                const fishY = r.top + r.height / 2;
+                const halfHeight = fish.offsetHeight * fishScale(fish) / 2;
+                while (push > 10 && others.some((o) =>
+                    Math.hypot(fishX + (dx / dist) * push - o.cx, fishY + (dy / dist) * push - o.cy) < o.radius + halfHeight + 10)) {
+                    push *= 0.7;
+                }
+
+                const tilt = (dx < 0 ? -1 : 1) * (8 + Math.random() * 8);
+                state.dart = {
+                    start: now,
+                    from: dartOffset(state, now),
+                    to: { x: (dx / dist) * push, y: (dy / dist) * push, rot: tilt },
+                };
+            });
+        }
+
+        // Look ahead along each fish's path and ease up or down around any bubble in the way
+        function steerFish(dt, now, bubbles) {
+            const reads = [...fishState].map(([fish, state]) => {
+                const s = fishScale(fish);
+                return [fish, state, fish.getBoundingClientRect(), fish.offsetWidth * s / 2, fish.offsetHeight * s / 2];
+            });
+
+            reads.forEach(([fish, state, r, halfWidth, halfHeight]) => {
+                const dart = dartOffset(state, now);
+                // Where the swim animation alone puts the fish
+                const baseX = r.left + r.width / 2 - dart.x;
+                const baseY = r.top + r.height / 2 - dart.y - state.avoidY;
+                const vx = state.lastX === null ? 0 : (baseX - state.lastX) / dt;
+                if (Math.abs(vx) > 5 && Math.abs(vx) < 1000) state.dir = Math.sign(vx); // ignore loop jumps
+                state.lastX = baseX;
+
+                const fishY = baseY + state.avoidY + dart.y; // where the fish actually is right now
+                // Match the hit test's inset box (15% / 20% trimmed off each side)
+                const reachX = halfWidth * 0.7;
+                const clearance = halfHeight * 0.6;
+                const speed = Math.max(Math.abs(vx), 20);
+
+                // Each bubble the fish will pass rules out a band of heights for the length of the pass.
+                // The bubble keeps rising meanwhile, so the band runs from its top at the end of the pass
+                // to its bottom at the start.
+                const bands = [];
+                bubbles.forEach(({ cx, cy, radius }) => {
+                    const ahead = (cx - baseX) * state.dir;
+                    const overlap = radius + reachX + 10;
+                    if (ahead < -overlap || ahead > overlap + 120) return;
+                    const tStart = Math.max(0, (ahead - overlap) / speed);
+                    const tEnd = Math.max(0, (ahead + overlap) / speed);
+                    bands.push([
+                        cy - riseSpeed * tEnd - radius - clearance - 6,
+                        cy - riseSpeed * tStart + radius + clearance + 6,
+                    ]);
+                });
+
+                // Pick the reachable height outside every band that's the smallest move, leaning toward
+                // ducking under (the bubble rises away) and toward the fish's normal path
+                let target = 0;
+                if (bands.length) {
+                    const blocked = (y) => bands.some(([top, bottom]) => y > top && y < bottom);
+                    const options = [fishY, baseY, ...bands.flatMap(([top, bottom]) => [top - 4, bottom + 4])]
+                        .filter((y) => Math.abs(y - baseY) <= maxSwerve);
+                    const cost = (y) => Math.abs(y - fishY) * (y > fishY ? 0.8 : 1) + Math.abs(y - baseY) * 0.3
+                        + (blocked(y) ? 1000 : 0);
+                    const best = options.reduce((a, b) => (cost(b) < cost(a) ? b : a), fishY);
+                    target = best - baseY - dart.y;
+                }
+                target = Math.max(-maxSwerve, Math.min(maxSwerve, target));
+
+                const step = (bands.length ? steerSpeed : relaxSpeed) * dt;
+                const move = Math.max(-step, Math.min(step, target - state.avoidY));
+                state.avoidY += move;
+
+                // Nose follows the swerve: up when rising, down when diving
+                const vy = move / dt;
+                const tiltTarget = Math.max(-25, Math.min(25,
+                    state.dir * Math.atan2(vy, Math.max(Math.abs(vx), 40)) * 180 / Math.PI));
+                state.tilt += (tiltTarget - state.tilt) * Math.min(1, dt * 8);
+
+                fish.style.translate = `${dart.x}px ${dart.y + state.avoidY}px`;
+                fish.style.rotate = `${dart.rot + state.tilt}deg`;
+            });
+        }
+
+        // Pops in place; the bubble stays hidden (and out of the tab order) until its next pass from the bottom
+        function popBubble(bubble) {
+            bubble.classList.add('popping');
+            bubble.querySelector('button').tabIndex = -1;
+            startleFish(bubble);
+        }
+
+        // Project detail panel
+        const bowl = document.querySelector('.bowl');
+        const detail = document.getElementById('project-detail');
+        const detailClose = detail.querySelector('.project-detail-close');
+        let detailOrigin = 'circle(0 at 50% 50%)';
+
+        function openDetail(project, index, bubble) {
+            const bowlRect = bowl.getBoundingClientRect();
+            const r = bubble.getBoundingClientRect();
+            // Start the reveal as a circle exactly where the bubble was
+            detailOrigin = `circle(${r.width / 2}px at ${r.left + r.width / 2 - bowlRect.left}px ${r.top + r.height / 2 - bowlRect.top}px)`;
+
+            detail.querySelector('.project-detail-kicker').textContent =
+                `${String(index + 1).padStart(2, '0')} / ${String(projects.length).padStart(2, '0')}`;
+            detail.querySelector('.project-detail-title').textContent = project.title;
+            detail.querySelector('.project-detail-desc').textContent = project.description;
+            const img = detail.querySelector('.project-detail-frame img');
+            img.src = project.image;
+            img.alt = project.title;
+
+            detail.style.clipPath = detailOrigin;
+            detail.hidden = false;
+            detail.offsetWidth; // apply the start shape before transitioning
+            detail.classList.add('open');
+            detail.style.clipPath = 'circle(50% at 50% 50%)';
+            detailClose.focus();
+        }
+
+        function closeDetail() {
+            if (detail.hidden) return;
+            detail.classList.remove('open');
+            detail.style.clipPath = detailOrigin;
+            detailClose.blur();
+            if (reduceMotion) detail.hidden = true;
+        }
+
+        detail.addEventListener('transitionend', (e) => {
+            if (e.target === detail && e.propertyName === 'clip-path' && !detail.classList.contains('open')) {
+                detail.hidden = true;
+            }
+        });
+        detailClose.addEventListener('click', closeDetail);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeDetail();
+        });
+
+        projects.forEach((project, i) => {
+            const bubble = document.createElement('div');
+            bubble.className = 'project-bubble';
+            bubble.style.setProperty('--size', `${76 + Math.random() * 24}px`);
+            bubble.style.setProperty('--dur', `${riseDuration}s`);
+            bubble.style.setProperty('--sway', `${3 + Math.random() * 2}s`);
+            bubble.style.left = `${30 + Math.random() * 40}%`;
+            // Negative delay spreads them up the tank on load instead of all starting at the bottom
+            bubble.style.animationDelay = `${-(i / projects.length) * riseDuration}s`;
+
+            if (reduceMotion) {
+                bubble.style.animation = 'none';
+                bubble.style.bottom = `${20 + (i % 3) * 22}%`;
+                bubble.style.left = `${25 + (i % 2) * 50}%`;
+            }
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'project-bubble-inner';
+            button.textContent = project.title;
+            if (reduceMotion) button.style.animation = 'none';
+
+            // Pop the bubble and grow the detail panel out of it
+            button.addEventListener('click', () => {
+                openDetail(project, i, bubble);
+                popBubble(bubble);
+            });
+
+            // New x position each time it re-enters from the bottom; a popped bubble respawns
+            bubble.addEventListener('animationiteration', (e) => {
+                if (e.target !== bubble) return;
+                bubble.style.left = `${30 + Math.random() * 40}%`;
+                bubble.classList.remove('popping');
+                button.tabIndex = 0;
+            });
+
+            bubble.appendChild(button);
+            projectLayer.appendChild(bubble);
+        });
+
+        // Bubbles pop when they bump into a fish or reach the top of the bowl
+        const fishes = document.querySelectorAll('.fish');
+
+        function circleHitsRect(cx, cy, radius, rect) {
+            // Shrink the fish box a little since the body is a pointed polygon
+            const insetX = rect.width * 0.15;
+            const insetY = rect.height * 0.2;
+            const nearestX = Math.max(rect.left + insetX, Math.min(cx, rect.right - insetX));
+            const nearestY = Math.max(rect.top + insetY, Math.min(cy, rect.bottom - insetY));
+            return Math.hypot(cx - nearestX, cy - nearestY) < radius;
+        }
+
+        let lastFrame = null;
+
+        // Each frame: read all positions first, then steer the fish and pop anything that collided
+        function tick(now) {
+            const dt = Math.min(0.05, ((now - (lastFrame ?? now)) / 1000) || 1 / 60);
+            lastFrame = now;
+
+            const bowlRect = bowl.getBoundingClientRect();
+            const bowlX = bowlRect.left + bowlRect.width / 2;
+            const bowlY = bowlRect.top + bowlRect.height / 2;
+            const bowlRadius = bowlRect.width / 2;
+            const fishRects = [...fishes].map(fishHitBox);
+            const bubbles = [...document.querySelectorAll('.project-bubble:not(.popping)')].map((el) => {
+                const r = el.getBoundingClientRect();
+                return { el, cx: r.left + r.width / 2, cy: r.top + r.height / 2, radius: r.width / 2 };
+            });
+
+            bubbles.forEach(({ el, cx, cy, radius }) => {
+                // Leave a bubble alone while someone is about to click it
+                if (el.matches(':hover, :focus-within')) return;
+
+                // Only the upper half of the glass counts, so bubbles can enter from below
+                const hitTop = cy < bowlY && Math.hypot(cx - bowlX, cy - bowlY) + radius >= bowlRadius;
+                const hitFish = fishRects.some((fr) => circleHitsRect(cx, cy, radius, fr));
+                if (hitTop || hitFish) popBubble(el);
+            });
+
+            steerFish(dt, now, bubbles);
+            requestAnimationFrame(tick);
+        }
+
+        if (!reduceMotion) requestAnimationFrame(tick);
+    </script>
+</body>
+</html>
